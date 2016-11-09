@@ -1,6 +1,6 @@
 CodeBook
 ---------------
-//Sometimes this file will show some encoding error, please open the raw file to take a insight
+//Sometimes this file will show some wrapping error, please open the raw file to take a insight
 Show all details of the data set
 ---------------------------------
 
