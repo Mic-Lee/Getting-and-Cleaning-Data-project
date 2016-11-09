@@ -1,0 +1,21 @@
+{
+    "collab_server" : "",
+    "contents" : "library(data.table)\nlibrary(reshape2)\n#set wd\n#setwd(\"'Your own path'/Getting-and-Cleaning-Data-project\")\n\n#load data\npath <- getwd()\npath.data <- file.path(path, \"UCI HAR Dataset\")\nlist.files(path.data, recursive = TRUE)\ndtSubjectTrain <- fread(file.path(path.data, \"train\", \"subject_train.txt\"))\ndtSubjectTest <- fread(file.path(path.data, \"test\", \"subject_test.txt\"))\ndtActivityTrain <- fread(file.path(path.data, \"train\", \"Y_train.txt\"))\ndtActivityTest <- fread(file.path(path.data, \"test\", \"Y_test.txt\"))\nfileToDataTable <- function(f) {\n  df <- read.table(f)\n  dt <- data.table(df)\n}\ndtTrain <- fileToDataTable(file.path(path.data, \"train\", \"X_train.txt\"))\ndtTest <- fileToDataTable(file.path(path.data, \"test\", \"X_test.txt\"))\n\n#Merge data sets\ndtSubject <- rbind(dtSubjectTrain, dtSubjectTest)\nsetnames(dtSubject, \"V1\", \"subject\")\ndtActivity <- rbind(dtActivityTrain, dtActivityTest)\nsetnames(dtActivity, \"V1\", \"activityNum\")\ndt <- rbind(dtTrain, dtTest)\ndtSubject <- cbind(dtSubject, dtActivity)\ndt <- cbind(dtSubject, dt)\nsetkey(dt, subject, activityNum)\n\n#Extact mean and std\ndtFeatures <- fread(file.path(path.data, \"features.txt\"))\nsetnames(dtFeatures, names(dtFeatures), c(\"featureNum\", \"featureName\"))\ndtFeatures <- dtFeatures[grepl(\"mean\\\\(\\\\)|std\\\\(\\\\)\", featureName)]\ndtFeatures$featureCode <- dtFeatures[, paste0(\"V\", featureNum)]\nhead(dtFeatures)\ndtFeatures$featureCode\nselect <- c(key(dt), dtFeatures$featureCode)\ndt <- dt[, select, with = FALSE]\n\n#use descriptive names\ndtActivityNames <- fread(file.path(path.data, \"activity_labels.txt\"))\nsetnames(dtActivityNames, names(dtActivityNames), c(\"activityNum\", \"activityName\"))\ndt <- merge(dt, dtActivityNames, by = \"activityNum\", all.x = TRUE)\nsetkey(dt, subject, activityNum, activityName)\ndt <- data.table(melt(dt, key(dt), variable.name = \"featureCode\"))\ndt <- merge(dt, dtFeatures[, list(featureNum, featureCode, featureName)], by = \"featureCode\",all.x = TRUE)\ndt$activity <- factor(dt$activityName)\ndt$feature <- factor(dt$featureName)\n\n#seperate features\ngrepthis <- function(regex) {\n  grepl(regex, dt$feature)\n}\n## Features with 2 categories\nn <- 2\ny <- matrix(seq(1, n), nrow = n)\nx <- matrix(c(grepthis(\"^t\"), grepthis(\"^f\")), ncol = nrow(y))\ndt$featDomain <- factor(x %*% y, labels = c(\"Time\", \"Freq\"))\nx <- matrix(c(grepthis(\"Acc\"), grepthis(\"Gyro\")), ncol = nrow(y))\ndt$featInstrument <- factor(x %*% y, labels = c(\"Accelerometer\", \"Gyroscope\"))\nx <- matrix(c(grepthis(\"BodyAcc\"), grepthis(\"GravityAcc\")), ncol = nrow(y))\ndt$featAcceleration <- factor(x %*% y, labels = c(NA, \"Body\", \"Gravity\"))\nx <- matrix(c(grepthis(\"mean()\"), grepthis(\"std()\")), ncol = nrow(y))\ndt$featVariable <- factor(x %*% y, labels = c(\"Mean\", \"SD\"))\n## Features with 1 category\ndt$featJerk <- factor(grepthis(\"Jerk\"), labels = c(NA, \"Jerk\"))\ndt$featMagnitude <- factor(grepthis(\"Mag\"), labels = c(NA, \"Magnitude\"))\n## Features with 3 categories\nn <- 3\ny <- matrix(seq(1, n), nrow = n)\nx <- matrix(c(grepthis(\"-X\"), grepthis(\"-Y\"), grepthis(\"-Z\")), ncol = nrow(y))\ndt$featAxis <- factor(x %*% y, labels = c(NA, \"X\", \"Y\", \"Z\"))\n\n#Create a tidy data set\nsetkey(dt, subject, activity, featDomain, featAcceleration, featInstrument,featJerk, featMagnitude, featVariable, featAxis)\ndtTidy <- dt[, list(count = .N, average = mean(value)), by = key(dt)]\n\n#save tha data set\nf <- file.path(path, \"GCD-Project-Dataset.txt\")\nwrite.table(dtTidy, f, quote = FALSE, sep = \"\\t\", row.names = FALSE)\n",
+    "created" : 1478658046150.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "3761964524",
+    "id" : "15D4F5B3",
+    "lastKnownWriteTime" : 1478689515,
+    "last_content_update" : 1478689515923,
+    "path" : "D:/MicFile/360云盘/R_Workspace/Programs in Coursera/Getting and Cleaning Data/Getting-and-Cleaning-Data-Project/Getting-and-Cleaning-Data-project/run_analysis.R",
+    "project_path" : null,
+    "properties" : {
+        "tempName" : "Untitled1"
+    },
+    "relative_order" : 3,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}
